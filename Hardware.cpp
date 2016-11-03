@@ -22,7 +22,8 @@ static const int oledDC = 5;            // DC pin of OLED
 static const int oledRST = 6;         // RST pin of OLED
 static const int LEDR = 22;          
 static const int LEDG = 23;         
-//static const int LEDB = 24;         
+static const int LEDB = 24;         
+static const int ampEn = 17;         
 
 //static uint32_t pinValues;
 //static uint32_t oldPinValues;
@@ -80,6 +81,10 @@ void Hardware::hardwareInit(void){
     digitalWrite(ploadPin, HIGH);
     pinValues = 0;
 
+    // enable amplifier
+    pinMode(ampEn, OUTPUT);
+    digitalWrite(ampEn, HIGH);
+
     // OLED pins
     pinMode (oledDC, OUTPUT) ;
     pinMode (oledRST, OUTPUT) ;
@@ -98,14 +103,14 @@ void Hardware::hardwareInit(void){
     // GPIO for LEDs
     pinMode(LEDR, OUTPUT);
     pinMode(LEDG, OUTPUT);
-    //pinMode(LEDB, OUTPUT);
+    pinMode(LEDB, OUTPUT);
     digitalWrite(LEDR, LOW);
     digitalWrite(LEDG, LOW);
-    //digitalWrite(LEDB, LOW);
+    digitalWrite(LEDB, LOW);
     delay(10); // flash em
-    digitalWrite(LEDR, HIGH);
-    digitalWrite(LEDG, HIGH);
-    //digitalWrite(LEDB, HIGH);
+//    digitalWrite(LEDR, HIGH);
+//    digitalWrite(LEDG, HIGH);
+ //   digitalWrite(LEDB, HIGH);
 
     // keys
     keyStatesLast = 0;

@@ -302,10 +302,18 @@ int main(int argc, char* argv[]) {
         if (interface.encTurnFlag) encoderInput();
         interface.getKeyStates();
         if (interface.keyStates != interface.keyStatesLast) {
-            interface.keyStatesLast = interface.keyStates;
-            for (int i = 0; i < 32; i++){
-                printf("%d ", (interface.keyStates >> i) & 1);
+            for (int i = 0; i < 25; i++){
+                //printf("%d ", (interface.keyStates >> i) & 1);
+                if(((interface.keyStates >> i) & 1) != ((interface.keyStatesLast >> i) & 1)){
+                    printf("k %d, v %d \n", i, ((interface.keyStates >> i) & 1));
+                    OSCMessage msgOut("/key");
+                    msgOut.add(i);
+                    msgOut.add(((interface.keyStates >> i) & 1) * 100);
+                    msgOut.send(dump);
+                    udpSock.writeBuffer(dump.buffer, dump.length);        
+                }
             }
+            interface.keyStatesLast = interface.keyStates;
             printf("\n");
         }
        
