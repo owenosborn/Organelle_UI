@@ -352,7 +352,7 @@ int main(int argc, char* argv[]) {
         if (pingTimer.getElapsed() > 1000.f) {
 
             // check for shutdown shortcut
-            if (encoderDownTime != -1) {
+            /*if (encoderDownTime != -1) {
                 encoderDownTime--;
                 if (encoderDownTime == 1) {
                     app.oled(AppData::AUX).clear();
@@ -369,7 +369,7 @@ int main(int argc, char* argv[]) {
                     app.oled(AppData::AUX).newScreen = 1;
                     menu.runShutdown(0, 0);
                 }
-            }
+            }*/
 
             // check for patch loading timeout
             if (app.hasPatchLoadingTimedOut(1000)) {

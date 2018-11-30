@@ -50,7 +50,7 @@ static unsigned char oled_initcode[] = {
 	0x40,                                  // 0x20 is default?
 	SSD1306_MEMORYMODE,                    // 0x20
 	0x00,                                  // 0x0 act like ks0108
-	SSD1306_SEGREMAP,
+	SSD1306_SEGREMAP | 0x1,
 	SSD1306_COMSCANDEC,
 	SSD1306_CHARGEPUMP,                    //0x8D
 	0x14,
