@@ -312,8 +312,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::AUX).newScreen) {
                     app.oled(AppData::AUX).newScreen = 0;
-                    //updateScreenPage(0, app.oled(AppData::AUX));
-                    
+                    interface.oledWrite(app.oled(AppData::AUX).pix_buf); 
                 }
             }
         }
@@ -323,7 +322,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::MENU).newScreen) {
                     app.oled(AppData::MENU).newScreen = 0;
-                    //updateScreenPage(0, app.oled(AppData::MENU));
+                    interface.oledWrite(app.oled(AppData::MENU).pix_buf);
                 }
 
                 // don't timeout to patch screen, whilst holding down encoder
@@ -344,7 +343,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::PATCH).newScreen) {
                     app.oled(AppData::PATCH).newScreen = 0;
-                    //updateScreenPage(0, app.oled(AppData::PATCH));
+                    interface.oledWrite(app.oled(AppData::PATCH).pix_buf);
                 }
             }
         }
