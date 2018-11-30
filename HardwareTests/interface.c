@@ -10,7 +10,7 @@
 #define NUMBER_OF_SHIFT_CHIPS   4
 #define DATA_WIDTH   NUMBER_OF_SHIFT_CHIPS * 8
 #define PULSE_WIDTH_USEC   1
-#define POLL_DELAY_MSEC   250
+#define POLL_DELAY_MSEC   2
 
 static const int ploadPin = 34;         // parallel load pin the 165
 static const int clockEnablePin = 35;   // ce pin the 165
@@ -160,7 +160,7 @@ void checkEncoder(void){
 	static uint8_t press_count = 0;
 	static uint8_t release_count = 0;
 
-	button = (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_13));
+	button = (pinValues >> 4) & 0x1;
 
 	if (button == PRESS) {
 		press_count++;
@@ -171,7 +171,7 @@ void checkEncoder(void){
 			release_count = 0;
 
 			// send press
-			printf("pressed\n");
+			printf("PRESSSED!!!!!\n");
 	}
 
 	if (button == RELEASE) {
@@ -183,43 +183,28 @@ void checkEncoder(void){
 			press_count = 0;
 
 			// send release
-			printf("released\n");
+			printf("RELEASED!!!!!\n");
 	}
 
 
-
-
 	// turning
-	/*encoder = 0;
-	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_14))
-		encoder |= 0x1;
-	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_15))
-		encoder |= 0x2;
-
-	if (encoder != encoder_last) {
-
+	encoder = (pinValues >> 5) & 0x3;
+	
+    if (encoder != encoder_last) {
 		if (encoder_last == 0) {
-			OSCMessage msgEncoder("/enc");
 			if (encoder == 2)
-				msgEncoder.add(0);
+				printf("u\n");//msgEncoder.add(0);
 			if (encoder == 1)
-				msgEncoder.add(1);
-			msgEncoder.send(oscBuf);
-			slip.sendMessage(oscBuf.buffer, oscBuf.length);
+				printf("d\n");//msgEncoder.add(1);
 		}
 		if (encoder_last == 3) {
-			OSCMessage msgEncoder("/enc");
 			if (encoder == 1)
-				msgEncoder.add(0);
+				printf("u\n");//msgEncoder.add(0);
 			if (encoder == 2)
-				msgEncoder.add(1);
-			msgEncoder.send(oscBuf);
-			slip.sendMessage(oscBuf.buffer, oscBuf.length);
+				printf("d\n");//msgEncoder.add(1);
 		}
 		encoder_last = encoder;
-
-		//msgEncoder.setAddress("/enc");
-	}*/
+	}
 }
 
 
@@ -262,6 +247,9 @@ int main(void)
         if(pinValues != oldPinValues)
         {
             shiftRegDisplay();
+            //uint32_t t = (pinValues >> 5) & 3;
+            //printf("%d\n", t);
+            checkEncoder();
             oldPinValues = pinValues;
         }
 
@@ -273,10 +261,10 @@ int main(void)
         adcs[5] = adcRead(5);
         adcs[6] = adcRead(7);
 
-        for (int i = 0; i < 7; i++){
-            printf("%d ", adcs[i]);
-        }
-        printf("\n");
+  //      for (int i = 0; i < 7; i++){
+  //          printf("%d ", adcs[i]);
+  //      }
+  //      printf("\n");
         delay(POLL_DELAY_MSEC);
     }
 
