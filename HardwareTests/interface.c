@@ -161,7 +161,6 @@ void checkEncoder(void){
 	static uint8_t release_count = 0;
 
 	button = (pinValues >> 4) & 0x1;
-
 	if (button == PRESS) {
 		press_count++;
 		release_count = 0;
@@ -169,40 +168,46 @@ void checkEncoder(void){
 	if ((press_count > 10) && (button_last == RELEASE)){	// press
 			button_last = PRESS;
 			release_count = 0;
-
-			// send press
-			printf("PRESSSED!!!!!\n");
+            encBut = 1;
+            encButFlag = 1;
 	}
 
 	if (button == RELEASE) {
 		release_count++;
 		press_count = 0;
 	}
-	if ((release_count > 50) && (button_last == PRESS)){	// release
+	if ((release_count > 10) && (button_last == PRESS)){	// release
 			button_last = RELEASE;
 			press_count = 0;
-
-			// send release
 			printf("RELEASED!!!!!\n");
+            encBut = 0;
+            encButFlag = 1;
 	}
-
 
 	// turning
 	encoder = (pinValues >> 5) & 0x3;
 	
     if (encoder != encoder_last) {
 		if (encoder_last == 0) {
-			if (encoder == 2)
-				printf("u\n");//msgEncoder.add(0);
-			if (encoder == 1)
-				printf("d\n");//msgEncoder.add(1);
-		}
+			if (encoder == 2){
+				encTurn = 0;
+                encTurnFlag = 1;
+			}
+            if (encoder == 1){
+                encTurn = 1;
+                encTurnFlag = 1;
+		    }
+        }
 		if (encoder_last == 3) {
-			if (encoder == 1)
-				printf("u\n");//msgEncoder.add(0);
-			if (encoder == 2)
-				printf("d\n");//msgEncoder.add(1);
-		}
+			if (encoder == 1){
+                encTurn = 0;
+                encTurnFlag = 1;
+			}
+            if (encoder == 2){
+                encTurn = 1;
+                encTurnFlag = 1;
+		    }
+        }
 		encoder_last = encoder;
 	}
 }
@@ -246,12 +251,13 @@ int main(void)
         pinValues = shiftRegRead();
         if(pinValues != oldPinValues)
         {
-            shiftRegDisplay();
+            //shiftRegDisplay();
             //uint32_t t = (pinValues >> 5) & 3;
             //printf("%d\n", t);
-            checkEncoder();
+            //checkEncoder();
             oldPinValues = pinValues;
         }
+            checkEncoder();
 
         adcs[0] = adcRead(0);
         adcs[1] = adcRead(1);
