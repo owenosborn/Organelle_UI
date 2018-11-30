@@ -11,6 +11,7 @@ objects =  \
 	SLIPEncodedSerial.o \
 	Serial.o Socket.o \
 	UdpSocket.o \
+    Hardware.o \
 	OSC/OSCData.o \
 	OSC/OSCMatch.o \
 	OSC/OSCMessage.o \
@@ -18,7 +19,7 @@ objects =  \
 	OSC/SimpleWriter.o 
 
 main : $(objects)
-	g++ -o main $(objects)
+	g++ -l wiringPi -o main $(objects)
 
 .PHONY : clean
 
@@ -105,6 +106,7 @@ image : main
 
 # Generate with g++ -MM *.c* OSC/*.* 
 AppData.o: AppData.cpp AppData.h OledScreen.h
+Hardware.o: Hardware.cpp ssd1306.h Hardware.h
 MainMenu.o: MainMenu.cpp MainMenu.h AppData.h OledScreen.h
 OledScreen.o: OledScreen.cpp OledScreen.h fonts.h simple_svg_1.0.0.hpp
 SLIPEncodedSerial.o: SLIPEncodedSerial.cpp SLIPEncodedSerial.h Serial.h \
@@ -124,3 +126,4 @@ OSCMessage.o: OSC/OSCMessage.cpp OSC/OSCMessage.h OSC/OSCData.h \
   OSC/OSCTiming.h OSC/SimpleWriter.h OSC/OSCMatch.h
 OSCTiming.o: OSC/OSCTiming.cpp OSC/OSCTiming.h
 SimpleWriter.o: OSC/SimpleWriter.cpp OSC/SimpleWriter.h
+

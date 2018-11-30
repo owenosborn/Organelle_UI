@@ -1,0 +1,210 @@
+
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
+#include <stdio.h>  
+#include <stdlib.h>  
+#include <stdint.h>
+#include <string.h>
+#include <time.h>
+#include "ssd1306.h"
+#include "Hardware.h"
+
+#define NUMBER_OF_SHIFT_CHIPS   4
+#define DATA_WIDTH   NUMBER_OF_SHIFT_CHIPS * 8
+#define PULSE_WIDTH_USEC   1
+#define POLL_DELAY_MSEC   250
+
+static const int ploadPin = 34;         // parallel load pin the 165
+static const int clockEnablePin = 35;   // ce pin the 165
+static const int dataPin = 33;             // Q7 pin the 165
+static const int clockPin = 32;         // clk pin the 165
+static const int oledDC = 5;            // DC pin of OLED
+static const int oledRST = 6;         // RST pin of OLED
+
+//static uint32_t pinValues;
+//static uint32_t oldPinValues;
+
+// OLED stuff
+static unsigned char oled_initcode[] = {
+	// Initialisation sequence
+	SSD1306_DISPLAYOFF,                    // 0xAE
+	SSD1306_SETLOWCOLUMN,            // low col = 0
+	SSD1306_SETHIGHCOLUMN,           // hi col = 0
+	SSD1306_SETSTARTLINE,            // line #0
+	SSD1306_SETCONTRAST,                   // 0x81
+	0xCF,
+	0xa1,                                  // setment remap 95 to 0 (?)
+	SSD1306_NORMALDISPLAY,                 // 0xA6
+	SSD1306_DISPLAYALLON_RESUME,           // 0xA4
+	SSD1306_SETMULTIPLEX,                  // 0xA8
+	0x3F,                                  // 0x3F 1/64 duty
+	SSD1306_SETDISPLAYOFFSET,              // 0xD3
+	0x0,                                   // no offset
+	SSD1306_SETDISPLAYCLOCKDIV,            // 0xD5
+	0xF0,                                  // the suggested ratio 0x80
+	SSD1306_SETPRECHARGE,                  // 0xd9
+	0xF1,
+	SSD1306_SETCOMPINS,                    // 0xDA
+	0x12,                                  // disable COM left/right remap
+	SSD1306_SETVCOMDETECT,                 // 0xDB
+	0x40,                                  // 0x20 is default?
+	SSD1306_MEMORYMODE,                    // 0x20
+	0x00,                                  // 0x0 act like ks0108
+	SSD1306_SEGREMAP,
+	SSD1306_COMSCANDEC,
+	SSD1306_CHARGEPUMP,                    //0x8D
+	0x14,
+	// Enabled the OLED panel
+	SSD1306_DISPLAYON
+};
+
+static unsigned char oled_poscode[] = {
+   	SSD1306_SETLOWCOLUMN,            // low col = 0
+	SSD1306_SETHIGHCOLUMN,           // hi col = 0
+	SSD1306_SETSTARTLINE            // line #0
+};
+
+void Hardware::hardwareInit(void){
+    // setup GPIO, this uses actual BCM pin numbers 
+    wiringPiSetupGpio();
+
+    // GPIO for shift registers
+    pinMode(ploadPin, OUTPUT);
+    pinMode(clockEnablePin, OUTPUT);
+    pinMode(clockPin, OUTPUT);
+    pinMode(dataPin, INPUT);
+    digitalWrite(clockPin, LOW);
+    digitalWrite(ploadPin, HIGH);
+    pinValues = 0;
+
+    // OLED
+    pinMode (oledDC, OUTPUT) ;
+    pinMode (oledRST, OUTPUT) ;
+    wiringPiSPISetup(0, 4*1000*1000);
+    wiringPiSPISetup(1, 4*1000*1000);  // for adc
+    
+    // reset
+    digitalWrite(oledRST,  LOW) ;
+    delay(50);
+    digitalWrite(oledRST,  HIGH) ;
+    
+    // initialize it
+    digitalWrite(oledDC, LOW);
+    wiringPiSPIDataRW(0, oled_initcode, 28);
+
+}
+
+void Hardware::oledWrite(uint8_t * buf)
+{
+    digitalWrite(oledDC, LOW);
+    wiringPiSPIDataRW(0, oled_poscode, 3);
+    digitalWrite(oledDC, HIGH);
+    wiringPiSPIDataRW(0, buf, 1024);
+}
+
+uint32_t Hardware::shiftRegRead(void)
+{
+    uint32_t bitVal;
+    uint32_t bytesVal = 0;
+
+    // load
+    digitalWrite(clockEnablePin, HIGH);
+    digitalWrite(ploadPin, LOW);
+    delayMicroseconds(PULSE_WIDTH_USEC);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(clockEnablePin, LOW);
+    delayMicroseconds(PULSE_WIDTH_USEC);
+    // shiftin
+    for(int i = 0; i < DATA_WIDTH; i++)
+    {
+        bitVal = digitalRead(dataPin);
+
+        bytesVal |= (bitVal << ((DATA_WIDTH-1) - i));
+
+        digitalWrite(clockPin, HIGH);
+        delayMicroseconds(PULSE_WIDTH_USEC);
+        digitalWrite(clockPin, LOW);
+    }
+
+    pinValues = bytesVal;
+    return(bytesVal);
+}
+
+void Hardware::shiftRegDisplay(void)
+{
+    for(int i = 0; i < DATA_WIDTH; i++)
+    {
+        printf(" ");
+
+        if((pinValues >> i) & 1)
+            printf("1");
+        else
+            printf("0");
+
+    }
+    printf("\n");
+}
+
+// read a channel
+uint32_t Hardware::adcRead(uint8_t adcnum)
+{ 
+    unsigned int commandout = 0;
+
+    commandout = adcnum & 0x7;  // only 0-7
+    commandout |= 0x18;     // start bit + single-ended bit
+
+    uint8_t spibuf[3];
+
+    spibuf[0] = commandout;
+    spibuf[1] = 0;
+    spibuf[2] = 0;
+
+    wiringPiSPIDataRW(1, spibuf, 3);    
+
+    return ((spibuf[1] << 8) | (spibuf[2])) >> 4;
+    
+}
+/*
+int main(void)
+{
+
+    uint8_t dung[1024];
+    uint32_t adcs[7];
+
+    for (int i =0; i< 1024; i++){
+        dung[i] = i & 0xff;
+    }
+    hardwareInit();
+    pinValues = shiftRegRead();
+    shiftRegDisplay();
+    oldPinValues = pinValues;
+   
+    oledWrite(dung);
+    for (;;) {
+        pinValues = shiftRegRead();
+        if(pinValues != oldPinValues)
+        {
+            shiftRegDisplay();
+            oldPinValues = pinValues;
+        }
+
+        adcs[0] = adcRead(0);
+        adcs[1] = adcRead(1);
+        adcs[2] = adcRead(2);
+        adcs[3] = adcRead(3);
+        adcs[4] = adcRead(4);
+        adcs[5] = adcRead(5);
+        adcs[6] = adcRead(7);
+
+        for (int i = 0; i < 7; i++){
+            printf("%d ", adcs[i]);
+        }
+        printf("\n");
+        delay(POLL_DELAY_MSEC);
+    }
+
+    return 0;
+}
+*/
+
+
