@@ -11,10 +11,16 @@ class Hardware
         uint32_t encTurn;
         uint32_t encTurnFlag;
         uint32_t pinValues;
-        
+        uint32_t adcs[8];
+
+        uint32_t keyStates;
+        uint32_t keyStatesLast;
+
+        void adcReadAll(void);
         void hardwareInit(void);
         void clearFlags(void);
         void checkEncoder(void);
+        void getKeyStates(void);
         void oledWrite(uint8_t * buf);
         uint32_t shiftRegRead(void);
         void shiftRegDisplay(void);

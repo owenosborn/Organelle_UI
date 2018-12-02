@@ -154,14 +154,13 @@ void pedalSwitchMode(OSCMessage &msg);
 /* OSC messages received from MCU (we only use ecncoder input, and smooth knobs,  key messages get passed righ to PD or other program */
 void encoderInput(void);
 void encoderButton(void);
-void knobsInput(OSCMessage &msg);
+void knobsInput(uint32_t * adc);
 void footswitchInput(OSCMessage &msg);
 /* end OSC messages received from MCU */
 
 /* helpers */
 void updateScreenPage(uint8_t page, OledScreen &screen);
 void setScreenLine(OledScreen &screen, int lineNum, OSCMessage &msg);
-void sendGetKnobs(void);
 void sendLed(unsigned c);
 void patchLoaded(bool);
 /* end helpers */
@@ -301,6 +300,15 @@ int main(int argc, char* argv[]) {
         interface.checkEncoder();
         if (interface.encButFlag) encoderButton();
         if (interface.encTurnFlag) encoderInput();
+        interface.getKeyStates();
+        if (interface.keyStates != interface.keyStatesLast) {
+            interface.keyStatesLast = interface.keyStates;
+            for (int i = 0; i < 32; i++){
+                printf("%d ", (interface.keyStates >> i) & 1);
+            }
+            printf("\n");
+        }
+       
         interface.clearFlags();
         
         // sleep for 2ms
@@ -383,7 +391,9 @@ int main(int argc, char* argv[]) {
         if (knobPollTimer.getElapsed() > 40.f) {
             knobPollTimer.reset();
             // check knobs
-            
+            interface.adcReadAll();
+            knobsInput(interface.adcs);
+             
             // service led flasher
             if(app.ledFlashCounter) {
                 app.ledFlashCounter--;
@@ -840,34 +850,32 @@ void encoderInput(void) {
     }
 }
 
-void knobsInput(OSCMessage &msg) {
+void knobsInput(uint32_t * adc) {
     bool changed = false;
     bool exprScaling = (pedalExprMin_!=0 || pedalExprMax_!=1023);
     // knob 1-4 + volume + expr , all 0-1023
     for(unsigned i = 0; i < MAX_KNOBS;i++) {
-        if(msg.isInt(i)) {
-            int v = msg.getInt(i);
+        int v = adc[i];
 
-            if(i==EXPR_KNOB && exprScaling) {
-                v = ( pedalExprMin_ <= pedalExprMax_ 
-                    ?  ((int32_t) ( v - pedalExprMin_ ) * 1023)  / (pedalExprMax_ - pedalExprMin_)
-                    :  ((int32_t) ( pedalExprMin_ - v ) * 1023)  / (pedalExprMin_ - pedalExprMax_)
-                    );
-                v = std::max(std::min(v,1023),0);
-            }
+        if(i==EXPR_KNOB && exprScaling) {
+            v = ( pedalExprMin_ <= pedalExprMax_ 
+                ?  ((int32_t) ( v - pedalExprMin_ ) * 1023)  / (pedalExprMax_ - pedalExprMin_)
+                :  ((int32_t) ( pedalExprMin_ - v ) * 1023)  / (pedalExprMin_ - pedalExprMax_)
+                );
+            v = std::max(std::min(v,1023),0);
+        }
 
-            if(v==0 || v==1023) {
-                // allow extremes
-                changed |= v != knobs_[i];
-                knobs_[i] = v;
-            } else {
-                // 75% new value, 25% old value
-                int16_t nv = (v >> 1) + (v >> 2) + (knobs_[i] >> 2);
-                int diff = nv - knobs_[i];
-                if(diff>2 || diff <-2) {
-                    changed = true;
-                    knobs_[i] = nv;
-                }
+        if(v==0 || v==1023) {
+            // allow extremes
+            changed |= v != knobs_[i];
+            knobs_[i] = v;
+        } else {
+            // 75% new value, 25% old value
+            int16_t nv = (v >> 1) + (v >> 2) + (knobs_[i] >> 2);
+            int diff = nv - knobs_[i];
+            if(diff>2 || diff <-2) {
+                changed = true;
+                knobs_[i] = nv;
             }
         }
     }
@@ -1003,12 +1011,6 @@ void setScreenLine(OledScreen &screen, int lineNum, OSCMessage &msg) {
     //    printf("%s\n", screenLine);
 }
 
-void sendGetKnobs(void) {
-    OSCMessage msg("/getknobs");
-    msg.add(1);
-    msg.send(dump);
-    //slip.sendMessage(dump.buffer, dump.length, serial);
-}
 
 void updateScreenPage(uint8_t page, OledScreen &screen) {
 

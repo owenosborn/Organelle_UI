@@ -168,8 +168,8 @@ void checkEncoder(void){
 	if ((press_count > 10) && (button_last == RELEASE)){	// press
 			button_last = PRESS;
 			release_count = 0;
-            encBut = 1;
-            encButFlag = 1;
+            //encBut = 1;
+            //encButFlag = 1;
 	}
 
 	if (button == RELEASE) {
@@ -180,8 +180,8 @@ void checkEncoder(void){
 			button_last = RELEASE;
 			press_count = 0;
 			printf("RELEASED!!!!!\n");
-            encBut = 0;
-            encButFlag = 1;
+            //encBut = 0;
+           // encButFlag = 1;
 	}
 
 	// turning
@@ -190,22 +190,22 @@ void checkEncoder(void){
     if (encoder != encoder_last) {
 		if (encoder_last == 0) {
 			if (encoder == 2){
-				encTurn = 0;
-                encTurnFlag = 1;
+			//	encTurn = 0;
+              //  encTurnFlag = 1;
 			}
             if (encoder == 1){
-                encTurn = 1;
-                encTurnFlag = 1;
+                //encTurn = 1;
+               // encTurnFlag = 1;
 		    }
         }
 		if (encoder_last == 3) {
 			if (encoder == 1){
-                encTurn = 0;
-                encTurnFlag = 1;
+                //encTurn = 0;
+                //encTurnFlag = 1;
 			}
             if (encoder == 2){
-                encTurn = 1;
-                encTurnFlag = 1;
+                //encTurn = 1;
+               // encTurnFlag = 1;
 		    }
         }
 		encoder_last = encoder;
@@ -251,14 +251,14 @@ int main(void)
         pinValues = shiftRegRead();
         if(pinValues != oldPinValues)
         {
-            //shiftRegDisplay();
+            shiftRegDisplay();
             //uint32_t t = (pinValues >> 5) & 3;
             //printf("%d\n", t);
-            //checkEncoder();
             oldPinValues = pinValues;
         }
-            checkEncoder();
+        checkEncoder();
 
+        /*
         adcs[0] = adcRead(0);
         adcs[1] = adcRead(1);
         adcs[2] = adcRead(2);
@@ -267,10 +267,9 @@ int main(void)
         adcs[5] = adcRead(5);
         adcs[6] = adcRead(7);
 
-  //      for (int i = 0; i < 7; i++){
-  //          printf("%d ", adcs[i]);
-  //      }
-  //      printf("\n");
+        for (int i = 0; i < 7; i++){
+            printf("%d ", adcs[i]);
+        }*/
         delay(POLL_DELAY_MSEC);
     }
 

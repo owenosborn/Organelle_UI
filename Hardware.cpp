@@ -20,6 +20,9 @@ static const int dataPin = 33;             // Q7 pin the 165
 static const int clockPin = 32;         // clk pin the 165
 static const int oledDC = 5;            // DC pin of OLED
 static const int oledRST = 6;         // RST pin of OLED
+static const int LEDR = 22;          
+static const int LEDG = 23;         
+//static const int LEDB = 24;         
 
 //static uint32_t pinValues;
 //static uint32_t oldPinValues;
@@ -77,20 +80,35 @@ void Hardware::hardwareInit(void){
     digitalWrite(ploadPin, HIGH);
     pinValues = 0;
 
-    // OLED
+    // OLED pins
     pinMode (oledDC, OUTPUT) ;
     pinMode (oledRST, OUTPUT) ;
     wiringPiSPISetup(0, 4*1000*1000);
     wiringPiSPISetup(1, 4*1000*1000);  // for adc
     
-    // reset
+    // reset OLED
     digitalWrite(oledRST,  LOW) ;
     delay(50);
     digitalWrite(oledRST,  HIGH) ;
     
-    // initialize it
+    // initialize OLED
     digitalWrite(oledDC, LOW);
     wiringPiSPIDataRW(0, oled_initcode, 28);
+
+    // GPIO for LEDs
+    pinMode(LEDR, OUTPUT);
+    pinMode(LEDG, OUTPUT);
+    //pinMode(LEDB, OUTPUT);
+    digitalWrite(LEDR, LOW);
+    digitalWrite(LEDG, LOW);
+    //digitalWrite(LEDB, LOW);
+    delay(10); // flash em
+    digitalWrite(LEDR, HIGH);
+    digitalWrite(LEDG, HIGH);
+    //digitalWrite(LEDB, HIGH);
+
+    // keys
+    keyStatesLast = 0;
 
     clearFlags();
 }
@@ -149,6 +167,15 @@ void Hardware::shiftRegDisplay(void)
 
     }
     printf("\n");
+}
+
+void Hardware::getKeyStates(void){
+    keyStates = 0;
+    for (int i = 0; i < 25; i++) {
+        keyStates |= (pinValues >> (i + 7) & 1) << i;
+    }
+    keyStates |= (0xFE000000);  // zero out the bits not key bits
+    keyStates = ~keyStates;
 }
 
 // check for encoder events after reading the shift register pins
@@ -218,6 +245,17 @@ void Hardware::checkEncoder(void){
         }
 		encoder_last = encoder;
 	}
+}
+
+void Hardware::adcReadAll(void) 
+{
+    adcs[0] = adcRead(0);
+    adcs[1] = adcRead(1);
+    adcs[2] = adcRead(2);
+    adcs[3] = adcRead(3);
+    adcs[4] = adcRead(4);
+    adcs[5] = adcRead(5);
+    adcs[6] = adcRead(7);
 }
 
 // read a channel
