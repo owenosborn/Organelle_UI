@@ -125,10 +125,14 @@ void Hardware::clearFlags(void){
 
 void Hardware::oledWrite(uint8_t * buf)
 {
+    // spi will overwrite the buffer with input, so we need a tmp
+    uint8_t tmp[1024];
+    memcpy(tmp, buf, 1024);
+    
     digitalWrite(oledDC, LOW);
     wiringPiSPIDataRW(0, oled_poscode, 3);
     digitalWrite(oledDC, HIGH);
-    wiringPiSPIDataRW(0, buf, 1024);
+    wiringPiSPIDataRW(0, tmp, 1024);
 }
 
 uint32_t Hardware::shiftRegRead(void)
@@ -176,9 +180,39 @@ void Hardware::shiftRegDisplay(void)
 
 void Hardware::getKeyStates(void){
     keyStates = 0;
-    for (int i = 0; i < 25; i++) {
-        keyStates |= (pinValues >> (i + 7) & 1) << i;
-    }
+    //for (int i = 0; i < 25; i++) {
+    //    keyStates |= (pinValues >> (i + 7) & 1) << i;
+    //}
+    
+    keyStates |= (pinValues >> (0 + 7) & 1) << 24;
+    keyStates |= (pinValues >> (1 + 7) & 1) << 16;
+    keyStates |= (pinValues >> (2 + 7) & 1) << 17;
+    keyStates |= (pinValues >> (3 + 7) & 1) << 18;
+    keyStates |= (pinValues >> (4 + 7) & 1) << 19;
+    keyStates |= (pinValues >> (5 + 7) & 1) << 20;
+    keyStates |= (pinValues >> (6 + 7) & 1) << 21;
+    keyStates |= (pinValues >> (7 + 7) & 1) << 22;
+   
+    keyStates |= (pinValues >> (8 + 7) & 1) << 23;
+    keyStates |= (pinValues >> (9 + 7) & 1) << 8;
+    keyStates |= (pinValues >> (10 + 7) & 1) << 9;
+    keyStates |= (pinValues >> (11 + 7) & 1) << 10;
+    keyStates |= (pinValues >> (12 + 7) & 1) << 11;
+    keyStates |= (pinValues >> (13 + 7) & 1) << 12;
+    keyStates |= (pinValues >> (14 + 7) & 1) << 13;
+    keyStates |= (pinValues >> (15 + 7) & 1) << 14;
+    
+    keyStates |= (pinValues >> (16 + 7) & 1) << 15;
+    keyStates |= (pinValues >> (17 + 7) & 1) << 0;
+    keyStates |= (pinValues >> (18 + 7) & 1) << 1;
+    keyStates |= (pinValues >> (19 + 7) & 1) << 2;
+    keyStates |= (pinValues >> (20 + 7) & 1) << 3;
+    keyStates |= (pinValues >> (21 + 7) & 1) << 4;
+    keyStates |= (pinValues >> (22 + 7) & 1) << 5;
+    keyStates |= (pinValues >> (23 + 7) & 1) << 6;
+    
+    keyStates |= (pinValues >> (24 + 7) & 1) << 7;
+    
     keyStates |= (0xFE000000);  // zero out the bits not key bits
     keyStates = ~keyStates;
 }

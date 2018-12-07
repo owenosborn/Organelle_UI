@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
             if (!msgIn.hasError()) {
                     //char buf[128];
                     //msgIn.getAddress(buf,0,128);
-                    //printf("osc message received %s %i\n",buf,msgIn.size());
+                //printf("osc message received %s %i\n",udpPacketIn,msgIn.size());
                 // or'ing will do lazy eval, i.e. as soon as one succeeds it will stop
                 bool processed =
                     msgIn.dispatch("/oled/vumeter", vuMeter, 0)
@@ -300,6 +300,10 @@ int main(int argc, char* argv[]) {
         interface.checkEncoder();
         if (interface.encButFlag) encoderButton();
         if (interface.encTurnFlag) encoderInput();
+        
+        // TODO make separate funciton to check key event
+        // cause this is remapping all the keys which we don't need to do if 
+        // a key event didn't happen
         interface.getKeyStates();
         if (interface.keyStates != interface.keyStatesLast) {
             for (int i = 0; i < 25; i++){
@@ -1016,7 +1020,7 @@ void setScreenLine(OledScreen &screen, int lineNum, OSCMessage &msg) {
         i++;
     }
     screen.setLine(lineNum, screenLine);
-    //    printf("%s\n", screenLine);
+   //     printf("%s\n", screenLine);
 }
 
 

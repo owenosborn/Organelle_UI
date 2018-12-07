@@ -10,7 +10,7 @@
 #define NUMBER_OF_SHIFT_CHIPS   4
 #define DATA_WIDTH   NUMBER_OF_SHIFT_CHIPS * 8
 #define PULSE_WIDTH_USEC   1
-#define POLL_DELAY_MSEC   2
+#define POLL_DELAY_MSEC   500
 
 static const int ploadPin = 34;         // parallel load pin the 165
 static const int clockEnablePin = 35;   // ce pin the 165
@@ -248,7 +248,7 @@ int main(void)
    
     oledWrite(dung);
     for (;;) {
-        pinValues = shiftRegRead();
+        /*pinValues = shiftRegRead();
         if(pinValues != oldPinValues)
         {
             shiftRegDisplay();
@@ -257,8 +257,9 @@ int main(void)
             oldPinValues = pinValues;
         }
         checkEncoder();
-
-        /*
+*/
+        
+            printf("\n");
         adcs[0] = adcRead(0);
         adcs[1] = adcRead(1);
         adcs[2] = adcRead(2);
@@ -269,7 +270,7 @@ int main(void)
 
         for (int i = 0; i < 7; i++){
             printf("%d ", adcs[i]);
-        }*/
+        }
         delay(POLL_DELAY_MSEC);
     }
 
