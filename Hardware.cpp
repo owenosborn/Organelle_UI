@@ -271,10 +271,6 @@ void Hardware::checkEncoder(void){
 	static uint8_t encoder_last = 0;
 	uint8_t encoder = 0;
 
-	// because the encoder has a crappy switch, we need  a
-	// different debouce time for press and release
-	// assume checkEncoder gets called every 5ms,
-	// we will wait 10 counts for press and 50 counts for release
 	#define PRESS 0
 	#define RELEASE 1
 	uint8_t button;
@@ -364,47 +360,5 @@ uint32_t Hardware::adcRead(uint8_t adcnum)
     return ((spibuf[1] << 8) | (spibuf[2])) >> 4;
     
 }
-/*
-int main(void)
-{
-
-    uint8_t dung[1024];
-    uint32_t adcs[7];
-
-    for (int i =0; i< 1024; i++){
-        dung[i] = i & 0xff;
-    }
-    hardwareInit();
-    pinValues = shiftRegRead();
-    shiftRegDisplay();
-    oldPinValues = pinValues;
-   
-    oledWrite(dung);
-    for (;;) {
-        pinValues = shiftRegRead();
-        if(pinValues != oldPinValues)
-        {
-            shiftRegDisplay();
-            oldPinValues = pinValues;
-        }
-
-        adcs[0] = adcRead(0);
-        adcs[1] = adcRead(1);
-        adcs[2] = adcRead(2);
-        adcs[3] = adcRead(3);
-        adcs[4] = adcRead(4);
-        adcs[5] = adcRead(5);
-        adcs[6] = adcRead(7);
-
-        for (int i = 0; i < 7; i++){
-            printf("%d ", adcs[i]);
-        }
-        printf("\n");
-        delay(POLL_DELAY_MSEC);
-    }
-
-    return 0;
-}
-*/
 
 
