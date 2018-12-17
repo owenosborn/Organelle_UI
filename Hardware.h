@@ -11,6 +11,7 @@ class Hardware
         uint32_t encTurn;
         uint32_t encTurnFlag;
         uint32_t pinValues;
+        uint32_t pinValuesLast;
         uint32_t adcs[8];
 
         uint32_t keyStates;
@@ -25,7 +26,7 @@ class Hardware
         uint32_t shiftRegRead(void);
         void shiftRegDisplay(void);
         uint32_t adcRead(uint8_t adcnum);
-
+        void flashLEDs(void);
 };
 
 

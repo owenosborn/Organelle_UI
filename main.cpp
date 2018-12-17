@@ -297,9 +297,24 @@ int main(int argc, char* argv[]) {
         // keys send them along
         // encoder fix encoderInput and encoderButton
         interface.shiftRegRead();
+
+        if (interface.pinValues != interface.pinValuesLast){
+            interface.flashLEDs();
+            interface.shiftRegDisplay();
+            interface.pinValuesLast = interface.pinValues;
+        }
+
+
+
         interface.checkEncoder();
-        if (interface.encButFlag) encoderButton();
-        if (interface.encTurnFlag) encoderInput();
+        if (interface.encButFlag) {
+            encoderButton();
+            //printf("press\n");   
+        }
+        if (interface.encTurnFlag) {
+            encoderInput();
+            //printf("turn\n");    
+        }
         
         // TODO make separate funciton to check key event
         // cause this is remapping all the keys which we don't need to do if 
@@ -309,7 +324,7 @@ int main(int argc, char* argv[]) {
             for (int i = 0; i < 25; i++){
                 //printf("%d ", (interface.keyStates >> i) & 1);
                 if(((interface.keyStates >> i) & 1) != ((interface.keyStatesLast >> i) & 1)){
-                    printf("k %d, v %d \n", i, ((interface.keyStates >> i) & 1));
+                    //printf("k %d, v %d \n", i, ((interface.keyStates >> i) & 1));
                     OSCMessage msgOut("/key");
                     msgOut.add(i);
                     msgOut.add(((interface.keyStates >> i) & 1) * 100);
@@ -318,7 +333,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             interface.keyStatesLast = interface.keyStates;
-            printf("\n");
+            //printf("\n");
         }
        
         interface.clearFlags();

@@ -1,6 +1,7 @@
 
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
+#include <wiringShift.h>
 #include <stdio.h>  
 #include <stdlib.h>  
 #include <stdint.h>
@@ -11,7 +12,7 @@
 
 #define NUMBER_OF_SHIFT_CHIPS   4
 #define DATA_WIDTH   NUMBER_OF_SHIFT_CHIPS * 8
-#define PULSE_WIDTH_USEC   1
+#define PULSE_WIDTH_USEC   2
 #define POLL_DELAY_MSEC   250
 
 static const int ploadPin = 34;         // parallel load pin the 165
@@ -79,6 +80,7 @@ void Hardware::hardwareInit(void){
     pinMode(dataPin, INPUT);
     digitalWrite(clockPin, LOW);
     digitalWrite(ploadPin, HIGH);
+    digitalWrite(clockEnablePin, LOW);
     pinValues = 0;
 
     // enable amplifier
@@ -123,6 +125,18 @@ void Hardware::clearFlags(void){
     encTurnFlag = 0;
 }
 
+void Hardware::flashLEDs(void) {
+    digitalWrite(LEDR, LOW);
+    digitalWrite(LEDG, LOW);
+    digitalWrite(LEDB, LOW);
+
+    delay(1);
+    digitalWrite(LEDR, HIGH);
+    digitalWrite(LEDG, HIGH);
+    digitalWrite(LEDB, HIGH);
+
+}
+
 void Hardware::oledWrite(uint8_t * buf)
 {
     // spi will overwrite the buffer with input, so we need a tmp
@@ -140,25 +154,59 @@ uint32_t Hardware::shiftRegRead(void)
     uint32_t bitVal;
     uint32_t bytesVal = 0;
 
+    // so far best way to do the bit banging reliably is to
+    // repeat the calls to reduce output Fclk
+    // delay functions no good for such small times
+
     // load
-    digitalWrite(clockEnablePin, HIGH);
     digitalWrite(ploadPin, LOW);
-    delayMicroseconds(PULSE_WIDTH_USEC);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    digitalWrite(ploadPin, LOW);
+    
     digitalWrite(ploadPin, HIGH);
-    digitalWrite(clockEnablePin, LOW);
-    delayMicroseconds(PULSE_WIDTH_USEC);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    digitalWrite(ploadPin, HIGH);
+    
     // shiftin
-    for(int i = 0; i < DATA_WIDTH; i++)
+   for(int i = 0; i < DATA_WIDTH; i++)
     {
         bitVal = digitalRead(dataPin);
 
         bytesVal |= (bitVal << ((DATA_WIDTH-1) - i));
 
         digitalWrite(clockPin, HIGH);
-        delayMicroseconds(PULSE_WIDTH_USEC);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        digitalWrite(clockPin, HIGH);
+        
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
+        digitalWrite(clockPin, LOW);
         digitalWrite(clockPin, LOW);
     }
 
+    //bytesVal = shiftIn(dataPin, clockPin, MSBFIRST);
+
+    
+    
     pinValues = bytesVal;
     return(bytesVal);
 }
@@ -169,7 +217,7 @@ void Hardware::shiftRegDisplay(void)
     {
         printf(" ");
 
-        if((pinValues >> i) & 1)
+        if((pinValues >> ((DATA_WIDTH-1)-i)) & 1)
             printf("1");
         else
             printf("0");
