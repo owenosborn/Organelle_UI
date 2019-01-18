@@ -10,63 +10,56 @@
 #include "ssd1306.h"
 #include "Hardware.h"
 
-#define NUMBER_OF_SHIFT_CHIPS   4
-#define DATA_WIDTH   NUMBER_OF_SHIFT_CHIPS * 8
-#define PULSE_WIDTH_USEC   2
-#define POLL_DELAY_MSEC   250
+#define SR_DATA_WIDTH 32        // number of bits to shift in on the 74HC165s
+#define SR_PLOAD 34             // parallel load pin 
+#define SR_CLOCK_ENABLE 35      // CE pin 
+#define SR_DATA 33              // Q7 pin 
+#define SR_CLOCK 32             // CLK pin 
+#define OLED_DC 5               // DC pin of OLED
+#define OLED_RST 6              // RST pin of OLED
+#define LEDR 22          
+#define LEDG 23       
+#define LEDB 2         
+#define AMP_ENABLE 17         
 
-static const int ploadPin = 34;         // parallel load pin the 165
-static const int clockEnablePin = 35;   // ce pin the 165
-static const int dataPin = 33;             // Q7 pin the 165
-static const int clockPin = 32;         // clk pin the 165
-static const int oledDC = 5;            // DC pin of OLED
-static const int oledRST = 6;         // RST pin of OLED
-static const int LEDR = 22;          
-static const int LEDG = 23;         
-static const int LEDB = 24;         
-static const int ampEn = 17;         
-
-//static uint32_t pinValues;
-//static uint32_t oldPinValues;
-
-// OLED stuff
+// OLED init bytes
 static unsigned char oled_initcode[] = {
 	// Initialisation sequence
-	SSD1306_DISPLAYOFF,                    // 0xAE
-	SSD1306_SETLOWCOLUMN,            // low col = 0
-	SSD1306_SETHIGHCOLUMN,           // hi col = 0
-	SSD1306_SETSTARTLINE,            // line #0
-	SSD1306_SETCONTRAST,                   // 0x81
+	SSD1306_DISPLAYOFF,                     // 0xAE
+	SSD1306_SETLOWCOLUMN,                   // low col = 0
+	SSD1306_SETHIGHCOLUMN,                  // hi col = 0
+	SSD1306_SETSTARTLINE,                   // line #0
+	SSD1306_SETCONTRAST,                    // 0x81
 	0xCF,
-	0xa1,                                  // setment remap 95 to 0 (?)
-	SSD1306_NORMALDISPLAY,                 // 0xA6
-	SSD1306_DISPLAYALLON_RESUME,           // 0xA4
-	SSD1306_SETMULTIPLEX,                  // 0xA8
-	0x3F,                                  // 0x3F 1/64 duty
-	SSD1306_SETDISPLAYOFFSET,              // 0xD3
-	0x0,                                   // no offset
-	SSD1306_SETDISPLAYCLOCKDIV,            // 0xD5
-	0xF0,                                  // the suggested ratio 0x80
-	SSD1306_SETPRECHARGE,                  // 0xd9
+	0xa1,                                   // setment remap 95 to 0 (?)
+	SSD1306_NORMALDISPLAY,                  // 0xA6
+	SSD1306_DISPLAYALLON_RESUME,            // 0xA4
+	SSD1306_SETMULTIPLEX,                   // 0xA8
+	0x3F,                                   // 0x3F 1/64 duty
+	SSD1306_SETDISPLAYOFFSET,               // 0xD3
+	0x0,                                    // no offset
+	SSD1306_SETDISPLAYCLOCKDIV,             // 0xD5
+	0xF0,                                   // the suggested ratio 0x80
+	SSD1306_SETPRECHARGE,                   // 0xd9
 	0xF1,
-	SSD1306_SETCOMPINS,                    // 0xDA
-	0x12,                                  // disable COM left/right remap
-	SSD1306_SETVCOMDETECT,                 // 0xDB
-	0x40,                                  // 0x20 is default?
-	SSD1306_MEMORYMODE,                    // 0x20
-	0x00,                                  // 0x0 act like ks0108
+	SSD1306_SETCOMPINS,                     // 0xDA
+	0x12,                                   // disable COM left/right remap
+	SSD1306_SETVCOMDETECT,                  // 0xDB
+	0x40,                                   // 0x20 is default?
+	SSD1306_MEMORYMODE,                     // 0x20
+	0x00,                                   // 0x0 act like ks0108
 	SSD1306_SEGREMAP | 0x1,
 	SSD1306_COMSCANDEC,
-	SSD1306_CHARGEPUMP,                    //0x8D
+	SSD1306_CHARGEPUMP,                     //0x8D
 	0x14,
 	// Enabled the OLED panel
 	SSD1306_DISPLAYON
 };
 
 static unsigned char oled_poscode[] = {
-   	SSD1306_SETLOWCOLUMN,            // low col = 0
-	SSD1306_SETHIGHCOLUMN,           // hi col = 0
-	SSD1306_SETSTARTLINE            // line #0
+   	SSD1306_SETLOWCOLUMN,                   // low col = 0
+	SSD1306_SETHIGHCOLUMN,                  // hi col = 0
+	SSD1306_SETSTARTLINE                    // line #0
 };
 
 void Hardware::hardwareInit(void){
@@ -74,32 +67,32 @@ void Hardware::hardwareInit(void){
     wiringPiSetupGpio();
 
     // GPIO for shift registers
-    pinMode(ploadPin, OUTPUT);
-    pinMode(clockEnablePin, OUTPUT);
-    pinMode(clockPin, OUTPUT);
-    pinMode(dataPin, INPUT);
-    digitalWrite(clockPin, LOW);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(clockEnablePin, LOW);
+    pinMode(SR_PLOAD, OUTPUT);
+    pinMode(SR_CLOCK_ENABLE, OUTPUT);
+    pinMode(SR_CLOCK, OUTPUT);
+    pinMode(SR_DATA, INPUT);
+    digitalWrite(SR_CLOCK, LOW);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_CLOCK_ENABLE, LOW);
     pinValues = 0;
 
     // enable amplifier
-    pinMode(ampEn, OUTPUT);
-    digitalWrite(ampEn, HIGH);
+    pinMode(AMP_ENABLE, OUTPUT);
+    digitalWrite(AMP_ENABLE, HIGH);
 
     // OLED pins
-    pinMode (oledDC, OUTPUT) ;
-    pinMode (oledRST, OUTPUT) ;
+    pinMode (OLED_DC, OUTPUT) ;
+    pinMode (OLED_RST, OUTPUT) ;
     wiringPiSPISetup(0, 4*1000*1000);
     wiringPiSPISetup(1, 4*1000*1000);  // for adc
     
     // reset OLED
-    digitalWrite(oledRST,  LOW) ;
+    digitalWrite(OLED_RST,  LOW) ;
     delay(50);
-    digitalWrite(oledRST,  HIGH) ;
+    digitalWrite(OLED_RST,  HIGH) ;
     
     // initialize OLED
-    digitalWrite(oledDC, LOW);
+    digitalWrite(OLED_DC, LOW);
     wiringPiSPIDataRW(0, oled_initcode, 28);
 
     // GPIO for LEDs
@@ -125,6 +118,18 @@ void Hardware::clearFlags(void){
     encTurnFlag = 0;
 }
 
+void Hardware::oledWrite(uint8_t * buf)
+{
+    // spi will overwrite the buffer with input, so we need a tmp
+    uint8_t tmp[1024];
+    memcpy(tmp, buf, 1024);
+    
+    digitalWrite(OLED_DC, LOW);
+    wiringPiSPIDataRW(0, oled_poscode, 3);
+    digitalWrite(OLED_DC, HIGH);
+    wiringPiSPIDataRW(0, tmp, 1024);
+}
+
 void Hardware::flashLEDs(void) {
     digitalWrite(LEDR, LOW);
     digitalWrite(LEDG, LOW);
@@ -137,75 +142,61 @@ void Hardware::flashLEDs(void) {
 
 }
 
-void Hardware::oledWrite(uint8_t * buf)
-{
-    // spi will overwrite the buffer with input, so we need a tmp
-    uint8_t tmp[1024];
-    memcpy(tmp, buf, 1024);
-    
-    digitalWrite(oledDC, LOW);
-    wiringPiSPIDataRW(0, oled_poscode, 3);
-    digitalWrite(oledDC, HIGH);
-    wiringPiSPIDataRW(0, tmp, 1024);
-}
-
 uint32_t Hardware::shiftRegRead(void)
 {
     uint32_t bitVal;
     uint32_t bytesVal = 0;
 
     // so far best way to do the bit banging reliably is to
-    // repeat the calls to reduce output Fclk
+    // repeat the calls to reduce output clock frequency, like ad hoc 'nop' instructions
     // delay functions no good for such small times
 
     // load
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
-    digitalWrite(ploadPin, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
+    digitalWrite(SR_PLOAD, LOW);
     
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
-    digitalWrite(ploadPin, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
+    digitalWrite(SR_PLOAD, HIGH);
     
     // shiftin
-   for(int i = 0; i < DATA_WIDTH; i++)
+   for(int i = 0; i < SR_DATA_WIDTH; i++)
     {
-        bitVal = digitalRead(dataPin);
+        bitVal = digitalRead(SR_DATA);
 
-        bytesVal |= (bitVal << ((DATA_WIDTH-1) - i));
+        bytesVal |= (bitVal << ((SR_DATA_WIDTH-1) - i));
 
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
-        digitalWrite(clockPin, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
+        digitalWrite(SR_CLOCK, HIGH);
         
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
-        digitalWrite(clockPin, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
+        digitalWrite(SR_CLOCK, LOW);
     }
 
-    //bytesVal = shiftIn(dataPin, clockPin, MSBFIRST);
-
-    
+    //bytesVal = shiftIn(SR_DATA, SR_CLOCK, MSBFIRST);
     
     pinValues = bytesVal;
     return(bytesVal);
@@ -213,11 +204,11 @@ uint32_t Hardware::shiftRegRead(void)
 
 void Hardware::shiftRegDisplay(void)
 {
-    for(int i = 0; i < DATA_WIDTH; i++)
+    for(int i = 0; i < SR_DATA_WIDTH; i++)
     {
         printf(" ");
 
-        if((pinValues >> ((DATA_WIDTH-1)-i)) & 1)
+        if((pinValues >> ((SR_DATA_WIDTH-1)-i)) & 1)
             printf("1");
         else
             printf("0");
@@ -341,7 +332,7 @@ void Hardware::adcReadAll(void)
     adcs[6] = adcRead(7);
 }
 
-// read a channel
+// read a channel from the MCP3008 ADC
 uint32_t Hardware::adcRead(uint8_t adcnum)
 { 
     unsigned int commandout = 0;

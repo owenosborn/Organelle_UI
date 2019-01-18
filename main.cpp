@@ -292,19 +292,13 @@ int main(int argc, char* argv[]) {
         }
 
         // check hardware input, pass key presses along
-        // knobs fix knobsInput
-        // foot switch fix footswitchInput
-        // keys send them along
-        // encoder fix encoderInput and encoderButton
         interface.shiftRegRead();
 
         if (interface.pinValues != interface.pinValuesLast){
             interface.flashLEDs();
-            interface.shiftRegDisplay();
+            //interface.shiftRegDisplay();
             interface.pinValuesLast = interface.pinValues;
         }
-
-
 
         interface.checkEncoder();
         if (interface.encButFlag) {
@@ -844,8 +838,8 @@ void encoderInput(void) {
 
     if (app.currentScreen == AppData::MENU) {
         app.menuScreenTimeout = MENU_TIMEOUT;
-        if (interface.encTurn == 1) menu.encoderUp();
-        if (interface.encTurn == 0) menu.encoderDown();
+        if (interface.encTurn == 1) menu.encoderDown();
+        if (interface.encTurn == 0) menu.encoderUp();
     }
     // if in patch mode, send encoder, but only if the patch said it wants encoder access
     if (app.currentScreen == AppData::PATCH) {
