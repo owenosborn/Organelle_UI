@@ -21,6 +21,7 @@
 #define LEDG 23       
 #define LEDB 2         
 #define AMP_ENABLE 17         
+#define PWR_STATUS 16           // battery or power adapter 
 
 // OLED init bytes
 static unsigned char oled_initcode[] = {
@@ -107,6 +108,11 @@ void Hardware::hardwareInit(void){
 //    digitalWrite(LEDG, HIGH);
  //   digitalWrite(LEDB, HIGH);
 
+    // GPIO for power status 
+    pinMode(PWR_STATUS, INPUT);
+    pullUpDnControl(PWR_STATUS, PUD_OFF);
+    pwrStatus = 0;
+
     // keys
     keyStatesLast = 0;
 
@@ -141,6 +147,7 @@ void Hardware::flashLEDs(void) {
     digitalWrite(LEDB, HIGH);
 
 }
+
 
 uint32_t Hardware::shiftRegRead(void)
 {
@@ -330,6 +337,9 @@ void Hardware::adcReadAll(void)
     adcs[4] = adcRead(4);
     adcs[5] = adcRead(5);
     adcs[6] = adcRead(7);
+    
+    // also check the pwr status pin
+    pwrStatus = digitalRead(PWR_STATUS);
 }
 
 // read a channel from the MCP3008 ADC

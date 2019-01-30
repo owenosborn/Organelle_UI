@@ -17,6 +17,8 @@ class Hardware
         uint32_t keyStates;
         uint32_t keyStatesLast;
 
+        uint32_t pwrStatus;
+
         void adcReadAll(void);
         void hardwareInit(void);
         void clearFlags(void);

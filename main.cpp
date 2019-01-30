@@ -31,8 +31,8 @@ enum PedalSwitchModes {
 static PedalSwitchModes pedalSwitchMode_ = PSM_PATCH;
 int footswitchPos = 1; //normally closed
 
-// dump of OSC message for sending 
-SimpleWriter dump;
+// oscBuf of OSC message for sending 
+SimpleWriter oscBuf;
 
 /*
 sockets for communicating OSC with other programs we need 3:
@@ -51,7 +51,7 @@ AppData app;
 MainMenu menu;
 
 // hardware, keys, knobs, oled, etc...
-Hardware interface;
+Hardware ogInterface;
 
 // exit flag
 int quit = 0;
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
     upTime.reset();
 
     // init hardware
-    interface.hardwareInit();
+    ogInterface.hardwareInit();
 
     app.oled(AppData::MENU).showInfoBar = false;
     app.oled(AppData::AUX).showInfoBar = false;
@@ -292,20 +292,20 @@ int main(int argc, char* argv[]) {
         }
 
         // check hardware input, pass key presses along
-        interface.shiftRegRead();
+        ogInterface.shiftRegRead();
 
-        if (interface.pinValues != interface.pinValuesLast){
-            interface.flashLEDs();
-            //interface.shiftRegDisplay();
-            interface.pinValuesLast = interface.pinValues;
+        if (ogInterface.pinValues != ogInterface.pinValuesLast){
+            ogInterface.flashLEDs();
+            ogInterface.shiftRegDisplay();
+            ogInterface.pinValuesLast = ogInterface.pinValues;
         }
 
-        interface.checkEncoder();
-        if (interface.encButFlag) {
+        ogInterface.checkEncoder();
+        if (ogInterface.encButFlag) {
             encoderButton();
             //printf("press\n");   
         }
-        if (interface.encTurnFlag) {
+        if (ogInterface.encTurnFlag) {
             encoderInput();
             //printf("turn\n");    
         }
@@ -313,24 +313,24 @@ int main(int argc, char* argv[]) {
         // TODO make separate funciton to check key event
         // cause this is remapping all the keys which we don't need to do if 
         // a key event didn't happen
-        interface.getKeyStates();
-        if (interface.keyStates != interface.keyStatesLast) {
+        ogInterface.getKeyStates();
+        if (ogInterface.keyStates != ogInterface.keyStatesLast) {
             for (int i = 0; i < 25; i++){
-                //printf("%d ", (interface.keyStates >> i) & 1);
-                if(((interface.keyStates >> i) & 1) != ((interface.keyStatesLast >> i) & 1)){
-                    //printf("k %d, v %d \n", i, ((interface.keyStates >> i) & 1));
+                //printf("%d ", (ogInterface.keyStates >> i) & 1);
+                if(((ogInterface.keyStates >> i) & 1) != ((ogInterface.keyStatesLast >> i) & 1)){
+                    //printf("k %d, v %d \n", i, ((ogInterface.keyStates >> i) & 1));
                     OSCMessage msgOut("/key");
                     msgOut.add(i);
-                    msgOut.add(((interface.keyStates >> i) & 1) * 100);
-                    msgOut.send(dump);
-                    udpSock.writeBuffer(dump.buffer, dump.length);        
+                    msgOut.add(((ogInterface.keyStates >> i) & 1) * 100);
+                    msgOut.send(oscBuf);
+                    udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);        
                 }
             }
-            interface.keyStatesLast = interface.keyStates;
+            ogInterface.keyStatesLast = ogInterface.keyStates;
             //printf("\n");
         }
        
-        interface.clearFlags();
+        ogInterface.clearFlags();
         
         // sleep for 2ms
         usleep(2000);
@@ -341,7 +341,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::AUX).newScreen) {
                     app.oled(AppData::AUX).newScreen = 0;
-                    interface.oledWrite(app.oled(AppData::AUX).pix_buf); 
+                    ogInterface.oledWrite(app.oled(AppData::AUX).pix_buf); 
                 }
             }
         }
@@ -351,7 +351,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::MENU).newScreen) {
                     app.oled(AppData::MENU).newScreen = 0;
-                    interface.oledWrite(app.oled(AppData::MENU).pix_buf);
+                    ogInterface.oledWrite(app.oled(AppData::MENU).pix_buf);
                 }
 
                 // don't timeout to patch screen, whilst holding down encoder
@@ -372,7 +372,7 @@ int main(int argc, char* argv[]) {
                 screenFpsTimer.reset();
                 if (app.oled(AppData::PATCH).newScreen) {
                     app.oled(AppData::PATCH).newScreen = 0;
-                    interface.oledWrite(app.oled(AppData::PATCH).pix_buf);
+                    ogInterface.oledWrite(app.oled(AppData::PATCH).pix_buf);
                 }
             }
         }
@@ -412,9 +412,10 @@ int main(int argc, char* argv[]) {
         if (knobPollTimer.getElapsed() > 40.f) {
             knobPollTimer.reset();
             // check knobs
-            interface.adcReadAll();
-            knobsInput(interface.adcs);
+            ogInterface.adcReadAll();
+            knobsInput(ogInterface.adcs);
              
+            //printf("%d, %d\n", ogInterface.adcs[6], ogInterface.pwrStatus);
             // service led flasher
             if(app.ledFlashCounter) {
                 app.ledFlashCounter--;
@@ -647,8 +648,8 @@ void quitMother(OSCMessage &msg) {
 void setLED(OSCMessage &msg) {
     if (msg.isInt(0)) {
         app.ledColor = msg.getInt(0);
-        msg.send(dump);
-        //slip.sendMessage(dump.buffer, dump.length, serial);
+        msg.send(oscBuf);
+        //slip.sendMessage(oscBuf.buffer, oscBuf.length, serial);
     }
 }
 
@@ -769,8 +770,8 @@ void patchLoaded(bool b) {
     for(unsigned i = 0; i < MAX_KNOBS;i++) {
         msgOut.add(knobs_[i]);
     }
-    msgOut.send(dump);
-    udpSock.writeBuffer(dump.buffer, dump.length);        
+    msgOut.send(oscBuf);
+    udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);        
 }
 
 void patchLoaded(OSCMessage &msg) {
@@ -838,16 +839,16 @@ void encoderInput(void) {
 
     if (app.currentScreen == AppData::MENU) {
         app.menuScreenTimeout = MENU_TIMEOUT;
-        if (interface.encTurn == 1) menu.encoderDown();
-        if (interface.encTurn == 0) menu.encoderUp();
+        if (ogInterface.encTurn == 1) menu.encoderDown();
+        if (ogInterface.encTurn == 0) menu.encoderUp();
     }
     // if in patch mode, send encoder, but only if the patch said it wants encoder access
     if (app.currentScreen == AppData::PATCH) {
         if (app.isPatchScreenEncoderOverride()) {
             OSCMessage msgOut("/encoder/turn");
-            msgOut.add(interface.encTurn);
-            msgOut.send(dump);
-            udpSock.writeBuffer(dump.buffer, dump.length);
+            msgOut.add(ogInterface.encTurn);
+            msgOut.send(oscBuf);
+            udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);
         }
         else {
             app.currentScreen = AppData::MENU;
@@ -859,9 +860,9 @@ void encoderInput(void) {
     if (app.currentScreen == AppData::AUX) {
         if (app.isAuxScreenEncoderOverride()) {
             OSCMessage msgOut("/encoder/turn");
-            msgOut.add(interface.encTurn);
-            msgOut.send(dump);
-            udpSockAux.writeBuffer(dump.buffer, dump.length);
+            msgOut.add(ogInterface.encTurn);
+            msgOut.send(oscBuf);
+            udpSockAux.writeBuffer(oscBuf.buffer, oscBuf.length);
         }
         else {
             app.currentScreen = AppData::MENU;
@@ -905,8 +906,8 @@ void knobsInput(uint32_t * adc) {
         for(unsigned i = 0; i < MAX_KNOBS;i++) {
             msgOut.add(knobs_[i]);
         }
-        msgOut.send(dump);
-        udpSock.writeBuffer(dump.buffer, dump.length);        
+        msgOut.send(oscBuf);
+        udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);        
     }
 }
 
@@ -927,8 +928,8 @@ void footswitchInput(OSCMessage &msg) {
         }
         case PSM_PATCH:
         default :  {
-            msg.send(dump);
-            udpSock.writeBuffer(dump.buffer, dump.length);      
+            msg.send(oscBuf);
+            udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);      
             break;  
         }
     }  //switch
@@ -943,7 +944,7 @@ void encoderButton(void) {
     if ( !  ( (app.currentScreen == AppData::PATCH && app.isPatchScreenEncoderOverride())
               || (app.currentScreen == AppData::AUX && app.isAuxScreenEncoderOverride()))) {
 
-        if (interface.encBut) {
+        if (ogInterface.encBut) {
             if (encoderDownTime == -1) {
                 encoderDownTime = SHUTDOWN_TIME;
             }
@@ -960,10 +961,10 @@ void encoderButton(void) {
 
 
     if (app.currentScreen == AppData::MENU) {
-        if (interface.encBut == 1) {
+        if (ogInterface.encBut == 1) {
             menu.encoderPress();
         }
-        if (interface.encBut == 0) {
+        if (ogInterface.encBut == 0) {
             menu.encoderRelease();
             // reset menu timeout when action is performed
             // (which is when we release encoder)
@@ -975,18 +976,18 @@ void encoderButton(void) {
     if (app.currentScreen == AppData::PATCH) {
         if (app.isPatchScreenEncoderOverride()) {
             OSCMessage msgOut("/encoder/button");
-            msgOut.add(interface.encBut);
-            msgOut.send(dump);
-            udpSock.writeBuffer(dump.buffer, dump.length);
+            msgOut.add(ogInterface.encBut);
+            msgOut.send(oscBuf);
+            udpSock.writeBuffer(oscBuf.buffer, oscBuf.length);
         }
     }
     // same for the aux screen
     if (app.currentScreen == AppData::AUX) {
         if (app.isAuxScreenEncoderOverride()) {
             OSCMessage msgOut("/encoder/button");
-            msgOut.add(interface.encBut);
-            msgOut.send(dump);
-            udpSockAux.writeBuffer(dump.buffer, dump.length);
+            msgOut.add(ogInterface.encBut);
+            msgOut.send(oscBuf);
+            udpSockAux.writeBuffer(oscBuf.buffer, oscBuf.length);
         }
     }
 }
@@ -998,8 +999,8 @@ void encoderButton(void) {
 void sendLed(unsigned c) {
     OSCMessage msg("/led");
     msg.add(c);
-    msg.send(dump);
-    //slip.sendMessage(dump.buffer, dump.length, serial);
+    msg.send(oscBuf);
+    //slip.sendMessage(oscBuf.buffer, oscBuf.length, serial);
 }
 
 void setScreenLine(OledScreen &screen, int lineNum, OSCMessage &msg) {
@@ -1056,8 +1057,8 @@ void updateScreenPage(uint8_t page, OledScreen &screen) {
     OSCMessage oledMsg("/oled");
     oledMsg.add(i);
     oledMsg.add(oledPage, 128);
-    oledMsg.send(dump);
-    //slip.sendMessage(dump.buffer, dump.length, serial);
+    oledMsg.send(oscBuf);
+    //slip.sendMessage(oscBuf.buffer, oscBuf.length, serial);
     oledMsg.empty();
 }
 
