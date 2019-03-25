@@ -18,7 +18,6 @@ static int16_t knobs_[MAX_KNOBS];
 static const int8_t EXPR_KNOB = 5;
 int       previousScreen = -1;
 int       encoderDownTime = -1;
-const int SHUTDOWN_TIME = 4;
 
 
 static int16_t pedalExprMin_ = 0;
@@ -258,7 +257,6 @@ int main(int argc, char* argv[]) {
                     || msgIn.dispatch("/oled/aux/clear", auxScreenClear, 0)
 
                     //|| msgIn.dispatch("/ready", sendReady, 0)
-                    //|| msgIn.dispatch("/shutdown", sendShutdown, 0)
                     || msgIn.dispatch("/led", setLED, 0)
                     || msgIn.dispatch("/led/flash", flashLED, 0)
                     || msgIn.dispatch("/oled/setscreen", setScreen, 0)
@@ -379,26 +377,6 @@ int main(int argc, char* argv[]) {
 
         // every 1 second do (slwo) periodic tasks
         if (pingTimer.getElapsed() > 1000.f) {
-
-            // check for shutdown shortcut
-            /*if (encoderDownTime != -1) {
-                encoderDownTime--;
-                if (encoderDownTime == 1) {
-                    app.oled(AppData::AUX).clear();
-                    app.oled(AppData::AUX).setLine(2, "HOLD to shutdown");
-                    app.oled(AppData::AUX).setLine(4, "release to abort");
-                    app.oled(AppData::AUX).newScreen = 1;
-                    previousScreen = app.currentScreen;
-                    app.currentScreen = AppData::AUX;
-                }
-                else if (encoderDownTime == 0) {
-                    fprintf(stderr, "shutting down.....\n");
-                    app.oled(AppData::AUX).clear();
-                    app.oled(AppData::AUX).setLine(3, "Shutting down");
-                    app.oled(AppData::AUX).newScreen = 1;
-                    menu.runShutdown(0, 0);
-                }
-            }*/
 
             // check for patch loading timeout
             if (app.hasPatchLoadingTimedOut(1000)) {
@@ -945,9 +923,6 @@ void encoderButton(void) {
               || (app.currentScreen == AppData::AUX && app.isAuxScreenEncoderOverride()))) {
 
         if (ogInterface.encBut) {
-            if (encoderDownTime == -1) {
-                encoderDownTime = SHUTDOWN_TIME;
-            }
         }
         else {
             encoderDownTime = -1;

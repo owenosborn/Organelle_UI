@@ -612,7 +612,6 @@ void MainMenu::buildMenu(signed mm_pos) {
     addMenuItem(numMenuEntries++, menuTitle.c_str(), "", &MainMenu::runDoNothing);
     systemMenuOffset = numMenuEntries;
 
-    addMenuItem(numMenuEntries++, "Shutdown", "Shutdown", &MainMenu::runShutdown);
     switch (currentMenu) {
     case MenuMode::M_STORAGE: {
         addMenuItem(numMenuEntries++, "Eject", "Eject", &MainMenu::runEject);
