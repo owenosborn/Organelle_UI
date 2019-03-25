@@ -295,7 +295,6 @@ void Hardware::checkEncoder(void){
 	if ((release_count > 10) && (button_last == PRESS)){	// release
 			button_last = RELEASE;
 			press_count = 0;
-			printf("RELEASED!!!!!\n");
             encBut = 0;
             encButFlag = 1;
 	}

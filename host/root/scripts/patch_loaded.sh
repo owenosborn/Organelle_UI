@@ -1,3 +1,4 @@
+#!/bin/bash
 # MIDI PARAMETERS:START
 # midiIn,0
 # midiOut,1

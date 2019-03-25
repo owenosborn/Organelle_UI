@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # export PATCH_DIR=${PATCH_DIR:="/usbdrive/Patches"}
 export FW_DIR=${FW_DIR:="/root"}

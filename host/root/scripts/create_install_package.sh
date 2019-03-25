@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 echo create install package for $1
 
 INSTALL_DIR=$1

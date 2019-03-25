@@ -294,18 +294,15 @@ int main(int argc, char* argv[]) {
 
         if (ogInterface.pinValues != ogInterface.pinValuesLast){
             ogInterface.flashLEDs();
-            ogInterface.shiftRegDisplay();
             ogInterface.pinValuesLast = ogInterface.pinValues;
         }
 
         ogInterface.checkEncoder();
         if (ogInterface.encButFlag) {
             encoderButton();
-            //printf("press\n");   
         }
         if (ogInterface.encTurnFlag) {
             encoderInput();
-            //printf("turn\n");    
         }
         
         // TODO make separate funciton to check key event
@@ -314,9 +311,7 @@ int main(int argc, char* argv[]) {
         ogInterface.getKeyStates();
         if (ogInterface.keyStates != ogInterface.keyStatesLast) {
             for (int i = 0; i < 25; i++){
-                //printf("%d ", (ogInterface.keyStates >> i) & 1);
                 if(((ogInterface.keyStates >> i) & 1) != ((ogInterface.keyStatesLast >> i) & 1)){
-                    //printf("k %d, v %d \n", i, ((ogInterface.keyStates >> i) & 1));
                     OSCMessage msgOut("/key");
                     msgOut.add(i);
                     msgOut.add(((ogInterface.keyStates >> i) & 1) * 100);
@@ -325,7 +320,6 @@ int main(int argc, char* argv[]) {
                 }
             }
             ogInterface.keyStatesLast = ogInterface.keyStates;
-            //printf("\n");
         }
        
         ogInterface.clearFlags();

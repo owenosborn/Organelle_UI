@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bini/bash
 
 USER_DIR=${USER_DIR:="/usbdrive"}
 # PATCH_DIR=${PATCH_DIR:="/usbdrive/Patches"}
